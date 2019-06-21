@@ -1,9 +1,8 @@
 import socket
-from socket import AF_INET, SOCK_STREAM, SO_REUSEADDR, SOL_SOCKET, SHUT_RDWR
 import ssl
 
 listen_addr = '127.0.0.1'
-listen_port = 8082
+listen_port = 9500
 server_cert = 'server.crt'
 server_key = 'server.key'
 client_certs = 'client.crt'
@@ -22,7 +21,8 @@ while True:
     newsocket, fromaddr = bindsocket.accept()
     print("Client connected: {}:{}".format(fromaddr[0], fromaddr[1]))
     conn = context.wrap_socket(newsocket, server_side=True)
-    print("SSL established. Peer: {}".format(conn.getpeercert()))
+    print("SSL established.")
+    print("Certificate Data: {}".format(conn.getpeercert()))
     buf = b''  # Buffer to hold received client data
     try:
         while True:
@@ -38,3 +38,4 @@ while True:
         print("Closing connection")
         conn.shutdown(socket.SHUT_RDWR)
         conn.close()
+        break
