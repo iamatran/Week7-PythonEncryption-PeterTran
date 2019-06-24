@@ -2,6 +2,6 @@
 Simulating SSL between client and server and CA applications 
 
 # Instructions
-Start CA first
-Then Server
-Then Client last
+1. Start CA first
+2. Then Server
+3. Then Client last
