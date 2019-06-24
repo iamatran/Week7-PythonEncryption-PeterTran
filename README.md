@@ -1,2 +1,7 @@
 # Week7-PythonEncryption-PeterTran
-Implementing a simple HTTPS protocol between client and server applications 
+Simulating SSL between client and server and CA applications 
+
+# Instructions
+Start CA first
+Then Server
+Then Client last

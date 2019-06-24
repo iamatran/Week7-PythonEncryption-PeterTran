@@ -1,41 +1,29 @@
 import socket
-import ssl
+import time
 
-listen_addr = '127.0.0.1'
-listen_port = 9500
-server_cert = 'server.crt'
-server_key = 'server.key'
-client_certs = 'client.crt'
+# CA starting up server
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_address = ('localhost', 9999)
+sock.bind(server_address) ; print('Starting up on {} port: {}'.format(*server_address))
+sock.listen(1); print('Waiting for a connection...')
 
-context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-context.verify_mode = ssl.CERT_REQUIRED
-context.load_cert_chain(certfile=server_cert, keyfile=server_key)
-context.load_verify_locations(cafile=client_certs)
+# CA gets registration from server
+connection, client_address = sock.accept() ; print('Connected to:', client_address) ; print('Waiting to receive data...')
+serverName = connection.recv(100); print('CA has received key from server:', serverName.decode())
+publicKey = connection.recv(100); print('CA has received key from server:', publicKey.decode())
+decodedPubKey = publicKey.decode()
+certificate = connection.recv(100); print('CA has received key from server:', certificate.decode())
+print('waiting for more connections...')
+#connection.close(); print('Closing connection to server')
 
-bindsocket = socket.socket()
-bindsocket.bind((listen_addr, listen_port))
-bindsocket.listen(5)
+# CA receives client request and verifies if authentic
+connection, client_address = sock.accept() ; print('Connected to:', client_address) ; print('Waiting to receive data...')
+serverName = connection.recv(100); print('CA has received:', serverName.decode()) ; time.sleep(1)
+if serverName.decode() == certificate.decode():
+    connection.sendall(decodedPubKey.encode('utf-8')); print('sending: ', decodedPubKey) ; time.sleep(1)
+else:
+    output = 'certificate not valid'
+    connection.sendall(decodedPubKey.encode('utf-8')); print(output); time.sleep(1)
 
-while True:
-    print("Waiting for client")
-    newsocket, fromaddr = bindsocket.accept()
-    print("Client connected: {}:{}".format(fromaddr[0], fromaddr[1]))
-    conn = context.wrap_socket(newsocket, server_side=True)
-    print("SSL established.")
-    print("Certificate Data: {}".format(conn.getpeercert()))
-    buf = b''  # Buffer to hold received client data
-    try:
-        while True:
-            data = conn.recv(4096)
-            if data:
-                # Client sent us data. Append to buffer
-                buf += data
-            else:
-                # No more data from client. Show buffer and close connection.
-                print("Received:", buf)
-                break
-    finally:
-        print("Closing connection")
-        conn.shutdown(socket.SHUT_RDWR)
-        conn.close()
-        break
+connection.close(); print('Closing connection')
+

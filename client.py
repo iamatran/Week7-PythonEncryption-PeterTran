@@ -1,22 +1,44 @@
 import socket
-import ssl
+import time
 
-host_addr = '127.0.0.1'
-host_port = 9500
-server_sni_hostname = 'example.com'
-server_cert = 'server.crt'
-client_cert = 'client.crt'
-client_key = 'client.key'
+# Client contacts server
+sock1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM); print('initiatiing connection to server')
+server_address = ('localhost', 9500)
+sock1.connect(server_address); print('Connecting to {} port: {}'.format(*server_address))
+output = 'Lets connect'
+sock1.sendall(output.encode('utf-8')); print('Sending:', output)
 
-context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=server_cert)
-context.load_cert_chain(certfile=client_cert, keyfile=client_key)
+#Receiving certificate from server
+certificate = sock1.recv(100)
+decodedCert = certificate.decode()
+print('Received certificate from server:', certificate.decode()) ; time.sleep(1)
+sock1.close(); print('Closing server socket')
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-conn = context.wrap_socket(s, server_side=False, server_hostname=server_sni_hostname)
-conn.connect((host_addr, host_port))
-print("SSL established.")
-print("Certificate Data: {}".format(conn.getpeercert()))
-print("Sending: 'Hello, world!")
-conn.send(b"Hello, world!")
-print("Closing connection")
-conn.close()
+# verifying with CA
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM); print('initiatiing connection to CA')
+ca_address = ('localhost', 9999)
+print('Connecting to {} port: {}'.format(*ca_address))
+sock.connect(ca_address); print('initiatiing connection to certificate authenticator')
+sock.sendall(decodedCert.encode('utf-8')); print('Sending:', decodedCert)
+
+# Client contacts CA to find if certificate is valid, gets public key
+publicKey = sock.recv(100);  print('Received public key from ca:', publicKey.decode()) ; time.sleep(2)
+decodedPubKey = publicKey.decode()
+sock.close(); print('Closing ca socket')
+
+# Client sends public key to Server
+sock1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM); print('initiatiing connection to server')
+server_address = ('localhost', 9500)
+sock1.connect(server_address); print('Connecting to {} port: {}'.format(*server_address))
+sock1.sendall(decodedPubKey.encode('utf-8')); print('Sending:', decodedPubKey)
+serverResponse = sock1.recv(100); print('client has received:', serverResponse.decode()); 
+
+#Client has conversation with server
+mess1 = 'Hi'
+sock1.sendall(mess1.encode('utf-8')); print('Sending:', mess1); time.sleep(1)
+res1 = sock1.recv(100); print('client has received:', res1.decode()); 
+mess2 = 'I am good'
+sock1.sendall(mess2.encode('utf-8')); print('Sending:', mess2); time.sleep(1)
+res2 = sock1.recv(100); print('client has received:', res2.decode()); 
+sock1.close(); print('Closing connection')
+
